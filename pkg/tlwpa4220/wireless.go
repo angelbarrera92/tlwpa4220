@@ -1,5 +1,7 @@
 package tlwpa4220
 
+import "net/url"
+
 type WirelessStatistics struct {
 	Success bool                     `json:"success"`
 	Timeout bool                     `json:"timeout"`
@@ -28,11 +30,12 @@ const (
 
 var (
 	// WirelessStatisticsParams Parameters to get wireless statistics
-	WirelessStatisticsParams map[string][]string = map[string][]string{
+	WirelessStatisticsParams url.Values = url.Values{
 		"operation": {"load"},
 	}
 )
 
+//nolint:typecheck
 func (c Client) WirelessStatistics() (WirelessStatistics, error) {
 	var wirelessStatistics WirelessStatistics
 
