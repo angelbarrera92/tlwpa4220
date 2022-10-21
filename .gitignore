@@ -15,5 +15,5 @@
 # vendor/
 
 .cache/
-tlwpa4220
 super-linter.log
+./tlwpa4220
