@@ -12,6 +12,7 @@ var (
 	}
 )
 
+//nolint:typecheck
 func (c Client) Reboot() error {
 	err := c.request(RebootEndpointPath, RebootParams, nil)
 	if err != nil {

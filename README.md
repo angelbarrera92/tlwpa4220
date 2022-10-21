@@ -43,11 +43,79 @@ func main() {
 
 ### As a CLI
 
-To be developed
+This package also provides a CLI to interact with the TL-WPA4220.
+It provides the following commands:
 
-### As an API
+- `tlwpa4220 cli`: Interact with the TL-WPA4220 using a CLI
+- `tlwpa4220 serve-metrics`: Expose metrics from the TL-WPA4220 in Prometheus format
 
-To be developed
+#### Build
+
+```bash
+go build -o tlwpa4220 cmd/main.go
+```
+
+#### Run commands
+
+The subcommands are:
+
+- `wireless-statistics`: Get the wireless statistics
+- `reboot`: Reboot the device
+
+```bash
+$ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" wireless-statistics
+2022/10/21 17:48:42 Running command wireless-statistics
+2022/10/21 17:48:42 Wireless statistics: {"success":true,"timeout":false,"data":[{"mac":"XX-YY-ZZ-46-1E-40","type":"2.4GHz","encryption":"wpa2-psk","rxpkts":"0","txpkts":"0","ip":"192.168.22.22","devName":"NSA"}],"others":{"max_rules":64}}
+$ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" reboot
+```
+
+#### Run the metrics exporter
+
+This package also provides a metrics exporter to expose the wireless statistics as Prometheus metrics.
+
+```bash
+$ ./tlwpa4220 serve-metrics --device-ip="192.168.2.1" --password="hopeItsNotAdmin"
+2022/10/21 17:51:28 Starting the metric recording thread
+2022/10/21 17:51:28 Serving metrics on 0.0.0.0:8080/metrics
+```
+
+##### Metrics
+
+The metrics are:
+
+- `connected_devices_total`: Number of connected devices
+- `connected_devices`: Number of connected devices per device type
+- `connected_devices_txpkts`: Number of transmitted packets per device
+- `connected_devices_rxpkts`: Number of received packets per device
+
+```bash
+$ curl http://localhost:8080/metrics
+# HELP connected_devices Connected devices
+# TYPE connected_devices gauge
+connected_devices{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 1
+# HELP connected_devices_rxpkts The total number of received packets
+# TYPE connected_devices_rxpkts gauge
+connected_devices_rxpkts{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 0
+# HELP connected_devices_total The total number of connected devices
+# TYPE connected_devices_total gauge
+connected_devices_total 1
+# HELP connected_devices_txpkts The total number of transmitted packets
+# TYPE connected_devices_txpkts gauge
+connected_devices_txpkts{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 0
+```
+
+## Development
+
+Use the `Makefile` to build and lint the code.
+
+Requirements:
+
+- `make`
+- [`Docker`](https://docs.docker.com/get-docker/)
+
+```bash
+make clean lint build
+```
 
 ## License
 

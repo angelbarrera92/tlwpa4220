@@ -1,7 +1,7 @@
 package tlwpa4220
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -18,7 +18,7 @@ type Client struct {
 }
 
 func md5hash(text string) string {
-	hash := md5.Sum([]byte(text))
+	hash := md5.Sum([]byte(text)) //nolint:gosec
 	return hex.EncodeToString(hash[:])
 }
 
