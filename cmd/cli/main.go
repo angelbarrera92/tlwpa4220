@@ -54,12 +54,11 @@ func (f *cliSubCommand) Parse(args []string) error {
 
 	f.command = &f.flag.Args()[0]
 
-	// TODO Validate valid commands
 	if *f.command == "" {
 		return fmt.Errorf("command is required")
 	}
 
-	if !(*f.command == "wireless-statistics" || *f.command == "reboot") {
+	if !(*f.command == "wireless-statistics" || *f.command == "reboot" || *f.command == "powerline-statistics") {
 		return fmt.Errorf("command '%s' is not valid", *f.command)
 	}
 
@@ -90,6 +89,20 @@ func (f *cliSubCommand) Run() error {
 		}
 
 		log.Printf("Wireless statistics: %v", string(bytes))
+	case "powerline-statistics":
+		po, err := f.tlwpa4220.PowerLineStatistics()
+		if err != nil {
+			log.Printf("Error getting powerline statistics: %s", err)
+			return err
+		}
+
+		bytes, err := json.Marshal(po)
+		if err != nil {
+			log.Printf("Error marshalling powerline statistics: %s", err)
+			return err
+		}
+
+		log.Printf("Powerline statistics: %v", string(bytes))
 	case "reboot":
 		err := f.tlwpa4220.Reboot()
 		if err != nil {

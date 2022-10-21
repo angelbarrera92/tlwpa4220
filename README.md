@@ -53,6 +53,8 @@ It provides the following commands:
 
 ```bash
 go build -o tlwpa4220 cmd/main.go
+# or
+make build
 ```
 
 #### Run commands
@@ -60,6 +62,7 @@ go build -o tlwpa4220 cmd/main.go
 The subcommands are:
 
 - `wireless-statistics`: Get the wireless statistics
+- `powerline-statistics`: Get the powerline statistics
 - `reboot`: Reboot the device
 
 ```bash
@@ -67,6 +70,10 @@ $ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" wireles
 2022/10/21 17:48:42 Running command wireless-statistics
 2022/10/21 17:48:42 Wireless statistics: {"success":true,"timeout":false,"data":[{"mac":"XX-YY-ZZ-46-1E-40","type":"2.4GHz","encryption":"wpa2-psk","rxpkts":"0","txpkts":"0","ip":"192.168.22.22","devName":"NSA"}],"others":{"max_rules":64}}
 $ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" reboot
+$ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" powerline-statistics
+2022/10/21 21:23:57 Running command powerline-statistics
+2022/10/21 21:23:57 Powerline statistics: {"timeout":false,"success":true,"data":[{"device_mac":"ZZ-YY-XX-2D-6C-40","device_password":"","rx_rate":"282","tx_rate":"186","status":"on"}]}
+
 ```
 
 #### Run the metrics exporter
@@ -87,6 +94,10 @@ The metrics are:
 - `connected_devices`: Number of connected devices per device type
 - `connected_devices_txpkts`: Number of transmitted packets per device
 - `connected_devices_rxpkts`: Number of received packets per device
+- `powerline_devices_total`: Number of powerline devices
+- `powerline_device`: Powerline device information and status
+- `powerline_device_txpkts`: Number of transmitted packets per powerline device
+- `powerline_device_rxpkts`: Number of received packets per powerline device
 
 ```bash
 $ curl http://localhost:8080/metrics
@@ -102,6 +113,18 @@ connected_devices_total 1
 # HELP connected_devices_txpkts The total number of transmitted packets
 # TYPE connected_devices_txpkts gauge
 connected_devices_txpkts{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 0
+# HELP powerline_device The powerline device
+# TYPE powerline_device gauge
+powerline_device{mac="ZZ:YY:XX:2D:6C:40"} 1
+# HELP powerline_device_rxpkts The powerline device rxpkts
+# TYPE powerline_device_rxpkts gauge
+powerline_device_rxpkts{mac="ZZ:YY:XX:2D:6C:40"} 283
+# HELP powerline_device_txpkts The powerline device txpkts
+# TYPE powerline_device_txpkts gauge
+powerline_device_txpkts{mac="ZZ:YY:XX:2D:6C:40"} 178
+# HELP powerline_devices_total The total number of powerline devices
+# TYPE powerline_devices_total gauge
+powerline_devices_total 1
 ```
 
 ## Development

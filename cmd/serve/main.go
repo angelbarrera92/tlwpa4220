@@ -17,6 +17,26 @@ import (
 )
 
 var (
+	totalPowerLineDevices = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "powerline_devices_total",
+		Help: "The total number of powerline devices",
+	})
+
+	powerLineDevices = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "powerline_device",
+		Help: "The powerline device",
+	}, []string{"mac"})
+
+	powerLineDeviceTxpkts = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "powerline_device_txpkts",
+		Help: "The powerline device txpkts",
+	}, []string{"mac"})
+
+	powerLineDeviceRxpkts = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "powerline_device_rxpkts",
+		Help: "The powerline device rxpkts",
+	}, []string{"mac"})
+
 	totalDevices = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "connected_devices_total",
 		Help: "The total number of connected devices",
@@ -91,9 +111,38 @@ func (f *serveMetricsSubCommand) Parse(args []string) error {
 	return nil
 }
 
+//nolint:govet
 func (f *serveMetricsSubCommand) recordMetrics() {
 	go func() {
 		for {
+			// Get the list of powerline devices
+			powerLineStatistics, err := f.tlwpa4220.PowerLineStatistics()
+			if err != nil {
+				log.Printf("Error getting powerline statistics: %s", err)
+			} else {
+				totalPowerLineDevices.Set(float64(len(powerLineStatistics.Data)))
+				for _, device := range powerLineStatistics.Data {
+					if device.Status == "on" {
+						powerLineDevices.WithLabelValues(formatMac(device.DeviceMac)).Set(1)
+					} else {
+						powerLineDevices.WithLabelValues(formatMac(device.DeviceMac)).Set(0)
+					}
+					pLDeviceTxpkts, err := strconv.ParseFloat(device.TxRate, 64)
+					if err != nil {
+						log.Printf("Error parsing txpkts: %s", err)
+					} else {
+						powerLineDeviceTxpkts.WithLabelValues(formatMac(device.DeviceMac)).Set(pLDeviceTxpkts)
+					}
+					plDeviceRxpkts, err := strconv.ParseFloat(device.RxRate, 64)
+					if err != nil {
+						log.Printf("Error parsing rxpkts: %s", err)
+					} else {
+						powerLineDeviceRxpkts.WithLabelValues(formatMac(device.DeviceMac)).Set(plDeviceRxpkts)
+					}
+				}
+			}
+
+			// Get the list of devices
 			wirelessStatistics, err := f.tlwpa4220.WirelessStatistics()
 			if err != nil {
 				log.Printf("Error getting wireless statistics: %v", err)
