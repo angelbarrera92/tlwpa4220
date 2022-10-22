@@ -33,5 +33,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          name: TL-WPA4220 v${{ github.ref_name }}
+          name: TL-WPA4220 ${{ github.ref_name }}
           files: tlwpa4220
