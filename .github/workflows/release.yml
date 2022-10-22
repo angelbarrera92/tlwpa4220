@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Set RELEASE_VERSION env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Build the binary
         run: make build
       - name: Build and publish the container image for ${{ github.repository }}
@@ -20,7 +22,7 @@ jobs:
           image_name: ${{ github.repository }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: build/container/Dockerfile
-          image_tag: ${{ github.ref }}
+          image_tag:  ${{ env.RELEASE_VERSION }}
       - name: Build and publish the container image for ${{ github.repository }}
         uses: macbre/push-to-ghcr@v9
         with:
