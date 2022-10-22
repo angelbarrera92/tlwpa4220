@@ -1,0 +1,37 @@
+---
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build the binary
+        run: COMMIT=${{ github.sha }} DATE=$(date --iso-8601=seconds) VERSION=${{ github.ref_name }} make build
+      - name: Build and publish the container image for ${{ github.repository }}:${{ github.ref_name }}
+        uses: macbre/push-to-ghcr@v9
+        with:
+          image_name: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: build/container/Dockerfile
+          image_tag:  ${{ github.ref_name }}
+      - name: Build and publish the container image for ${{ github.repository }}:latest
+        uses: macbre/push-to-ghcr@v9
+        with:
+          image_name: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: build/container/Dockerfile
+          image_tag: latest
+      - name: Create a Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          name: TL-WPA4220 ${{ github.ref_name }}
+          files: tlwpa4220
