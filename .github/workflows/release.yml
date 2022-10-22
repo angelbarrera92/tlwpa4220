@@ -1,0 +1,27 @@
+---
+name: release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build the binary
+        run: make build
+      - name: Build and publish the container image for ${{ github.repository }}
+        uses: macbre/push-to-ghcr@v9
+        with:
+          image_name: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: build/container/Dockerfile
+      # - name: Upload assets
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: tlwpa4220
+      #     path: ./tlwpa4220
