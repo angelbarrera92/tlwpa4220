@@ -3,7 +3,7 @@ COMMIT ?= none
 DATE ?= unknown
 
 build: clean
-	@docker run --rm -v $(shell mktemp -d):/cache -v $(shell pwd):/home/tlwpa4220 -u $(shell id -u):$(shell id -g) -w /home/tlwpa4220 -e GOOS=linux -e GOARCH=amd64 -e CGO_ENABLED=0 -e GOMODCACHE=/cache/mod -e GOCACHE=/cache/build cgr.dev/chainguard/go:1.19 build -o tlwpa4220 -ldflags="-X 'main.version=$(VERSION)' -X 'main.commit=$(COMMIT)' -X 'main.date=$(DATE)'"  cmd/main.go
+	@docker run --rm -v $(shell mktemp -d):/cache -v $(shell pwd):/home/tlwpa4220 -u $(shell id -u):$(shell id -g) -w /home/tlwpa4220 -e GOOS=linux -e GOARCH=amd64 -e CGO_ENABLED=0 -e GOMODCACHE=/cache/mod -e GOCACHE=/cache/build cgr.dev/chainguard/go:latest build -o tlwpa4220 -ldflags="-X 'main.version=$(VERSION)' -X 'main.commit=$(COMMIT)' -X 'main.date=$(DATE)'"  cmd/main.go
 
 lint:
 	@docker run --rm -e RUN_LOCAL=true -v $(shell pwd):/tmp/lint github/super-linter:v4
