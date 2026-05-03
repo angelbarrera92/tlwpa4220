@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: tlwpa4220
+    static_configs:
+      - targets: ["tlwpa4220-exporter:8080"]

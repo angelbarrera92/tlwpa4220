@@ -1,22 +1,18 @@
 package tlwpa4220
 
 const (
-	// Reboot Endpoint
+	// RebootEndpointPath is the endpoint path for rebooting the device.
 	RebootEndpointPath string = "admin/reboot.json"
 )
 
 var (
-	// RebootParams Parameters for reboot
-	RebootParams map[string][]string = map[string][]string{
+	// RebootParams are the parameters for the reboot request.
+	RebootParams = map[string][]string{
 		"operation": {"write"},
 	}
 )
 
-//nolint:typecheck
+// Reboot sends a reboot command to the device.
 func (c Client) Reboot() error {
-	err := c.request(RebootEndpointPath, RebootParams, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.request(RebootEndpointPath, RebootParams, nil)
 }

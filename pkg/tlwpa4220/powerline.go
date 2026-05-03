@@ -2,13 +2,15 @@ package tlwpa4220
 
 import "net/url"
 
+// PowerLineStatistics holds the response from the powerline statistics endpoint.
 type PowerLineStatistics struct {
 	Timeout bool                      `json:"timeout"`
 	Success bool                      `json:"success"`
-	Data    []powerLineStatisticsData `json:"data"`
+	Data    []PowerLineStatisticsData `json:"data"`
 }
 
-type powerLineStatisticsData struct {
+// PowerLineStatisticsData holds data for a single paired powerline adapter.
+type PowerLineStatisticsData struct {
 	DeviceMac      string `json:"device_mac"`
 	DevicePassword string `json:"device_password"`
 	RxRate         string `json:"rx_rate"`
@@ -17,18 +19,18 @@ type powerLineStatisticsData struct {
 }
 
 const (
-	// PowerLineStatisticsPath Endpoint
+	// PowerLineStatisticsPath is the endpoint for powerline statistics.
 	PowerLineStatisticsPath string = "admin/powerline?form=plc_device"
 )
 
 var (
-	// PowerLineStatisticsParams Parameters to get powerline statistics
+	// PowerLineStatisticsParams are the parameters to get powerline statistics.
 	PowerLineStatisticsParams url.Values = url.Values{
 		"operation": {"load"},
 	}
 )
 
-//nolint:typecheck
+// PowerLineStatistics returns the current powerline statistics from the device.
 func (c Client) PowerLineStatistics() (PowerLineStatistics, error) {
 	var powerLineStatistics PowerLineStatistics
 

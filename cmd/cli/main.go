@@ -1,3 +1,4 @@
+// Package cli provides the CLI subcommand for interacting with the TL-WPA4220 device.
 package cli
 
 import (
@@ -58,7 +59,7 @@ func (f *cliSubCommand) Parse(args []string) error {
 		return fmt.Errorf("command is required")
 	}
 
-	if !(*f.command == "wireless-statistics" || *f.command == "reboot" || *f.command == "powerline-statistics") {
+	if *f.command != "wireless-statistics" && *f.command != "reboot" && *f.command != "powerline-statistics" {
 		return fmt.Errorf("command '%s' is not valid", *f.command)
 	}
 

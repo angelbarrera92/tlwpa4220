@@ -2,14 +2,16 @@ package tlwpa4220
 
 import "net/url"
 
+// WirelessStatistics holds the response from the wireless statistics endpoint.
 type WirelessStatistics struct {
 	Success bool                     `json:"success"`
 	Timeout bool                     `json:"timeout"`
-	Data    []wirelessStatisticsData `json:"data"`
+	Data    []WirelessStatisticsData `json:"data"`
 	Others  wirelessStatisticsOthers `json:"others"`
 }
 
-type wirelessStatisticsData struct {
+// WirelessStatisticsData holds data for a single connected wireless device.
+type WirelessStatisticsData struct {
 	Mac        string `json:"mac"`
 	Type       string `json:"type"`
 	Encryption string `json:"encryption"`
@@ -24,18 +26,18 @@ type wirelessStatisticsOthers struct {
 }
 
 const (
-	// WirelessStatisticsPath Endpoint
+	// WirelessStatisticsPath is the endpoint for wireless statistics.
 	WirelessStatisticsPath string = "admin/wireless?form=statistics"
 )
 
 var (
-	// WirelessStatisticsParams Parameters to get wireless statistics
+	// WirelessStatisticsParams are the parameters to get wireless statistics.
 	WirelessStatisticsParams url.Values = url.Values{
 		"operation": {"load"},
 	}
 )
 
-//nolint:typecheck
+// WirelessStatistics returns the current wireless statistics from the device.
 func (c Client) WirelessStatistics() (WirelessStatistics, error) {
 	var wirelessStatistics WirelessStatistics
 

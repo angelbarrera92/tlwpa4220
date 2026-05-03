@@ -1,3 +1,4 @@
+// Package main is the entrypoint for the tlwpa4220 exporter.
 package main
 
 import (
@@ -16,31 +17,20 @@ var (
 	date    = "unknown"
 )
 
+// CliCommand is the interface for subcommands.
 type CliCommand interface {
 	Parse(args []string) error
 	Run() error
 }
 
 func printHelp() {
-	fmt.Println("Usage: tlwpa4220 [command]")
-	fmt.Println("Available commands:")
-	fmt.Println("  serve-metrics")
-	fmt.Println("  cli")
-	// Print also the version
-	fmt.Printf("Version: %s, commit: %s, built at: %s\n", version, commit, date)
+	fmt.Printf("Usage: tlwpa4220 [command]\nAvailable commands:\n  serve-metrics\n  cli\nVersion: %s, commit: %s, built at: %s\n", version, commit, date)
 }
 
 func main() {
-
-	// Print help if no arguments are provided
 	if len(os.Args) == 1 {
 		printHelp()
 		os.Exit(0)
-	}
-
-	if len(os.Args) < 2 {
-		log.Println("serve-metrics or cli subcommand is required")
-		os.Exit(1)
 	}
 
 	var cmd CliCommand
@@ -66,5 +56,4 @@ func main() {
 		log.Println(err)
 		os.Exit(1)
 	}
-
 }

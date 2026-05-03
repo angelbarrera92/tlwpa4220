@@ -1,6 +1,8 @@
+// Package tlwpa4220 provides a client for interacting with the TP-Link TL-WPA4220 device.
 package tlwpa4220
 
 import (
+	"context"
 	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +13,7 @@ import (
 	"strings"
 )
 
+// Client holds the connection details for the TL-WPA4220 device.
 type Client struct {
 	Username string
 	Password string
@@ -30,8 +33,8 @@ func (c Client) authCookie() string {
 func (c Client) request(path string, values url.Values, data interface{}) error {
 	body := strings.NewReader(values.Encode())
 
-	url := fmt.Sprintf("http://%s/%s", c.IP, path)
-	req, err := http.NewRequest("POST", url, body)
+	rawURL := fmt.Sprintf("http://%s/%s", c.IP, path)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, rawURL, body)
 	if err != nil {
 		return err
 	}
@@ -45,9 +48,9 @@ func (c Client) request(path string, values url.Values, data interface{}) error 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("request failed with status code %d", resp.StatusCode)
 	}
 

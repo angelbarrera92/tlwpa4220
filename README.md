@@ -1,8 +1,16 @@
-# TL-WPA4220 go package
+# TL-WPA4220 Prometheus Exporter
 
-[![GitHub Super-Linter](https://github.com/angelbarrera92/tlwpa4220/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Lint Code Base](https://github.com/angelbarrera92/tlwpa4220/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/angelbarrera92/tlwpa4220/actions/workflows/linter.yml)
 
-Go library for the TL-WPA4220
+Go library and Prometheus exporter for the TP-Link TL-WPA4220 powerline Wi-Fi extender.
+
+## Device notes
+
+The TL-WPA4220 runs a minimal embedded HTTP server with very limited concurrency. Sending rapid or concurrent requests will crash the web server, requiring a device reboot to recover. The exporter is designed around this constraint:
+
+- Requests are made **sequentially**, never concurrently
+- A configurable delay (`-request-delay`, default `1s`) is inserted between requests
+- The scrape interval (`-interval`, default `30s`) is intentionally conservative
 
 ## Usage
 
@@ -20,8 +28,8 @@ import (
 func main() {
     t := tlwpa4220.Client{
         Username: "admin",
-        Password: "hopeItsNotAdmin",
-        IP:       "192.168.2.1",
+        Password: "yourpassword",
+        IP:       "192.168.1.254",
     }
 
     wireless, err := t.WirelessStatistics()
@@ -30,114 +38,161 @@ func main() {
     }
 
     for _, device := range wireless.Data {
-        fmt.Println(device.Mac)
+        fmt.Println(device.Mac, device.IP, device.Type)
     }
 
-    err = t.Reboot()
+    powerline, err := t.PowerLineStatistics()
     if err != nil {
-        fmt.Println(err)
         panic(err)
+    }
+
+    for _, device := range powerline.Data {
+        fmt.Println(device.DeviceMac, device.TxRate, device.RxRate)
     }
 }
 ```
 
 ### As a CLI
 
-This package also provides a CLI to interact with the TL-WPA4220.
-It provides the following commands:
-
-- `tlwpa4220 cli`: Interact with the TL-WPA4220 using a CLI
-- `tlwpa4220 serve-metrics`: Expose metrics from the TL-WPA4220 in Prometheus format
-
-#### Build
-
 ```bash
-go build -o tlwpa4220 cmd/main.go
-# or
+# Build
 make build
+# or
+go build -o tlwpa4220 cmd/main.go
 ```
 
-#### Run commands
-
-The subcommands are:
-
-- `wireless-statistics`: Get the wireless statistics
-- `powerline-statistics`: Get the powerline statistics
-- `reboot`: Reboot the device
+Available subcommands:
 
 ```bash
-$ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" wireless-statistics
-2022/10/21 17:48:42 Running command wireless-statistics
-2022/10/21 17:48:42 Wireless statistics: {"success":true,"timeout":false,"data":[{"mac":"XX-YY-ZZ-46-1E-40","type":"2.4GHz","encryption":"wpa2-psk","rxpkts":"0","txpkts":"0","ip":"192.168.22.22","devName":"NSA"}],"others":{"max_rules":64}}
-$ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" reboot
-$ ./tlwpa4220 cli --device-ip="192.168.2.1" --password="hopeItsNotAdmin" powerline-statistics
-2022/10/21 21:23:57 Running command powerline-statistics
-2022/10/21 21:23:57 Powerline statistics: {"timeout":false,"success":true,"data":[{"device_mac":"ZZ-YY-XX-2D-6C-40","device_password":"","rx_rate":"282","tx_rate":"186","status":"on"}]}
+# List connected wireless devices
+./tlwpa4220 cli --device-ip=192.168.1.254 --password=yourpassword wireless-statistics
 
+# List paired powerline adapters
+./tlwpa4220 cli --device-ip=192.168.1.254 --password=yourpassword powerline-statistics
+
+# Reboot the device
+./tlwpa4220 cli --device-ip=192.168.1.254 --password=yourpassword reboot
 ```
 
-#### Run the metrics exporter
-
-This package also provides a metrics exporter to expose the wireless statistics as Prometheus metrics.
+### As a Prometheus exporter
 
 ```bash
-$ ./tlwpa4220 serve-metrics --device-ip="192.168.2.1" --password="hopeItsNotAdmin"
-2022/10/21 17:51:28 Starting the metric recording thread
-2022/10/21 17:51:28 Serving metrics on 0.0.0.0:8080/metrics
+./tlwpa4220 serve-metrics \
+  --device-ip=192.168.1.254 \
+  --password=yourpassword \
+  --interval=30s \
+  --request-delay=1s
 ```
 
-##### Metrics
+All flags:
 
-The metrics are:
+| Flag | Default | Description |
+|---|---|---|
+| `-device-ip` | *(required)* | IP address of the TL-WPA4220 |
+| `-password` | *(required)* | Device admin password |
+| `-username` | `admin` | Device admin username |
+| `-host` | `0.0.0.0` | Host to listen on |
+| `-port` | `8080` | Port to listen on |
+| `-interval` | `30s` | Interval between full collection cycles |
+| `-request-delay` | `1s` | Delay between consecutive HTTP requests to the device |
 
-- `connected_devices_total`: Number of connected devices
-- `connected_devices`: Number of connected devices per device type
-- `connected_devices_txpkts`: Number of transmitted packets per device
-- `connected_devices_rxpkts`: Number of received packets per device
-- `powerline_devices_total`: Number of powerline devices
-- `powerline_device`: Powerline device information and status
-- `powerline_device_txpkts`: Number of transmitted packets per powerline device
-- `powerline_device_rxpkts`: Number of received packets per powerline device
+#### Endpoints
 
-```bash
-$ curl http://localhost:8080/metrics
-# HELP connected_devices Connected devices
+- `GET /metrics` — Prometheus metrics
+- `GET /healthz` — Health check (returns `200 ok` when the exporter process is running)
+
+#### Metrics
+
+| Metric | Labels | Description |
+|---|---|---|
+| `scrape_success` | `endpoint` (`wireless`, `powerline`) | `1` if the last scrape succeeded, `0` otherwise |
+| `connected_devices` | `mac`, `ip`, `devname`, `type`, `encryption` | `1` for each currently connected wireless device |
+| `connected_devices_txpkts` | `mac`, `ip`, `devname`, `type`, `encryption` | Transmitted packets (always `0` on current firmware — known device bug) |
+| `connected_devices_rxpkts` | `mac`, `ip`, `devname`, `type`, `encryption` | Received packets (always `0` on current firmware — known device bug) |
+| `powerline_device` | `mac` | `1` if the powerline adapter is online, `0` otherwise |
+| `powerline_device_tx_rate` | `mac` | Powerline TX rate in Mbps |
+| `powerline_device_rx_rate` | `mac` | Powerline RX rate in Mbps |
+
+> **Note:** `connected_devices_txpkts` and `connected_devices_rxpkts` are always `0` due to a firmware bug in the TL-WPA4220 — the device never populates these counters in its API response.
+
+Example output:
+
+```
+# HELP scrape_success Whether the last scrape of the given endpoint succeeded (1=success, 0=failure)
+# TYPE scrape_success gauge
+scrape_success{endpoint="powerline"} 1
+scrape_success{endpoint="wireless"} 1
+# HELP connected_devices Wireless devices currently connected (1=connected)
 # TYPE connected_devices gauge
-connected_devices{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 1
-# HELP connected_devices_rxpkts The total number of received packets
-# TYPE connected_devices_rxpkts gauge
-connected_devices_rxpkts{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 0
-# HELP connected_devices_total The total number of connected devices
-# TYPE connected_devices_total gauge
-connected_devices_total 1
-# HELP connected_devices_txpkts The total number of transmitted packets
-# TYPE connected_devices_txpkts gauge
-connected_devices_txpkts{devname="NSA",ip="192.168.22.22",mac="XX:YY:ZZ:46:1E:40"} 0
-# HELP powerline_device The powerline device
+connected_devices{devname="mylaptop",encryption="wpa2-psk",ip="192.168.1.100",mac="AA:BB:CC:DD:EE:FF",type="2.4GHz"} 1
+# HELP powerline_device Powerline device status (1=on, 0=off)
 # TYPE powerline_device gauge
-powerline_device{mac="ZZ:YY:XX:2D:6C:40"} 1
-# HELP powerline_device_rxpkts The powerline device rxpkts
-# TYPE powerline_device_rxpkts gauge
-powerline_device_rxpkts{mac="ZZ:YY:XX:2D:6C:40"} 283
-# HELP powerline_device_txpkts The powerline device txpkts
-# TYPE powerline_device_txpkts gauge
-powerline_device_txpkts{mac="ZZ:YY:XX:2D:6C:40"} 178
-# HELP powerline_devices_total The total number of powerline devices
-# TYPE powerline_devices_total gauge
-powerline_devices_total 1
+powerline_device{mac="11:22:33:44:55:66"} 1
+# HELP powerline_device_rx_rate Powerline device RX rate in Mbps
+# TYPE powerline_device_rx_rate gauge
+powerline_device_rx_rate{mac="11:22:33:44:55:66"} 254
+# HELP powerline_device_tx_rate Powerline device TX rate in Mbps
+# TYPE powerline_device_tx_rate gauge
+powerline_device_tx_rate{mac="11:22:33:44:55:66"} 139
 ```
+
+#### Useful PromQL queries
+
+```promql
+# Number of connected wireless devices
+count(connected_devices)
+
+# Alert when a scrape fails
+scrape_success == 0
+
+# Powerline TX rate for all adapters
+powerline_device_tx_rate
+
+# Connected devices by band
+count(connected_devices) by (type)
+```
+
+### Docker
+
+```bash
+docker run --rm \
+  -p 8080:8080 \
+  ghcr.io/angelbarrera92/tlwpa4220:latest \
+  serve-metrics \
+  --device-ip=192.168.1.254 \
+  --password=yourpassword
+```
+
+### Docker Compose (with Prometheus and Grafana)
+
+A ready-to-use stack is provided in the `deploy/` directory:
+
+```bash
+cd deploy
+# Edit docker-compose.yml to set your device IP and password
+docker compose up -d
+```
+
+This starts:
+- The exporter on port `8080`
+- Prometheus on port `9090`
+- Grafana on port `3000` (default credentials: `admin` / `admin`)
+
+The Grafana dashboard is provisioned automatically and available under the **TL-WPA4220** folder.
 
 ## Development
 
-Use the `Makefile` to build and lint the code.
-
-Requirements:
-
-- `make`
-- [`Docker`](https://docs.docker.com/get-docker/)
+Requirements: `make`, `docker`, `go`, `golangci-lint`
 
 ```bash
-make clean lint build
+# Lint
+make lint
+
+# Build binary (via Docker)
+make build
+
+# Build container image
+make container
 ```
 
 ## License

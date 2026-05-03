@@ -1,12 +1,29 @@
 ---
-run:
-  timeout: 5m
+version: "2"
 
 linters:
-  enable-all: true
+  default: all
   disable:
-    # Meta-linters that fail in isolated container environments
-    - goanalysis_metalinter
-    - unused
-    - staticcheck
-    - megacheck
+    # Style preferences - overly opinionated for this codebase
+    - wsl
+    - wsl_v5
+    - nlreturn
+    - godot
+    - exhaustruct
+    - varnamelen
+    - gochecknoglobals
+    - cyclop
+    - funlen
+    - gocognit
+    - maintidx
+    - depguard
+    - forbidigo
+    - err113
+    - mnd
+    - nestif
+    - lll
+    - tagliatelle
+    - funcorder
+    - wrapcheck
+    - perfsprint
+    - testpackage
